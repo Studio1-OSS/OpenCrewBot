@@ -151,6 +151,7 @@ Add your keys to `.env`, then restart `pnpm dev`. Every key is optional:
 | `TYPESAFE_API_KEY` | Jev routing in Auto rooms. Without it, the room's lead answers. |
 | `JEV_MODEL` | Jev model id (default `jev-latest`). |
 | `OPENCREWBOT_DATA_DIR` | Where data lives (default `./data`). |
+| `OPENCREWBOT_ALLOWED_HOSTS` | Extra host names the API answers to, comma-separated. Only for deliberate setups behind your own sign-in. |
 
 **No keys yet?** Try these in a bot's chat in mock mode:
 
@@ -170,7 +171,9 @@ Bots, rooms and the chat transcript are stored in SQLite at `data/opencrewbot.db
 - **Composio** holds the sign-ins for apps you connect, and receives the actions a bot runs in them.
 - **Your MCP servers** receive the tool calls a bot makes to them. Their URLs and tokens are stored in `data/opencrewbot.db`.
 
-OpenCrewBot sends no telemetry of its own. Review the privacy policy and retention settings of each service you connect. It assumes one local owner and has no sign-in, so don't expose it to the internet as-is.
+OpenCrewBot sends no telemetry of its own. Review the privacy policy and retention settings of each service you connect.
+
+It assumes one local owner and has no sign-in. To keep it that way, `pnpm dev` and `pnpm start` listen on `127.0.0.1` only, and the API refuses requests from other websites and requests addressed to any host but `localhost`. Don't expose it to the internet as-is.
 
 ## Features
 
