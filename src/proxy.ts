@@ -1,8 +1,13 @@
 // The API has no sign-in: it trusts whoever can reach it, which should only be
-// you, on this machine. This guard keeps it that way. It refuses requests from
-// other websites (so a page you visit can't send messages, approve actions or
-// add servers through your browser), and requests addressed to any host but
-// this machine (DNS rebinding, or other devices on your network).
+// you, on this machine. Two layers keep it that way:
+//
+// - Network: `pnpm dev` / `pnpm start` listen on 127.0.0.1 only, so other
+//   devices can't connect at all. That binding is the real boundary.
+// - Browser: this guard refuses requests from other websites (so a page you
+//   visit can't send messages, approve actions or add servers through your
+//   browser) and requests addressed to any host but localhost (DNS rebinding).
+//   Browsers can't forge these headers, but other programs can, so this is not
+//   a substitute for the loopback binding or for real sign-in.
 import { NextResponse, type NextRequest } from "next/server";
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
