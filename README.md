@@ -13,6 +13,7 @@ Built with [Mastra](https://mastra.ai) and [Nebius Token Factory](https://tokenf
 ![Next.js 16](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
 ![Mastra](https://img.shields.io/badge/harness-Mastra-6d28d9)
 ![Nebius Token Factory](https://img.shields.io/badge/models-Nebius%20Token%20Factory-e0ff4f?labelColor=0b0b0b)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![Built by Studio1 team](https://img.shields.io/badge/built%20by-Studio1%20team-ff6b1a)](https://studio1hq.com)
 
 Run OpenCrewBot on your own machine. Bring a Nebius Token Factory key for the models, and optionally Tavily, Browserbase and Jev keys for search, browsing and room routing. With no keys at all, it runs in mock mode so you can try the whole interface first.
@@ -214,3 +215,7 @@ It assumes one local owner and has no sign-in. To keep it that way, `pnpm dev` a
 ## Contributing
 
 Issues and pull requests are welcome. Describe the workflow a change enables, run `pnpm exec tsc --noEmit` and `pnpm lint`, and say whether you tested it against live services or the mock model.
+
+## License
+
+[MIT](LICENSE) © 2026 Studio1HQ
