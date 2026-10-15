@@ -5,7 +5,7 @@ import type { ModelOption } from "@/lib/shared/types";
 
 export const DEFAULT_MODEL = "MiniMaxAI/MiniMax-M3";
 
-type Row = [id: string, context: number, tools: boolean, reasoning: boolean, vision: boolean, inPerM: number, outPerM: number];
+type Row = [id: string, context: number, tools: boolean, reasoning: boolean, vision: boolean, inPerM: number | null, outPerM: number | null];
 
 const STATIC: Row[] = [
   ["MiniMaxAI/MiniMax-M3", 1048576, true, true, false, 0.3, 1.2],
@@ -23,6 +23,7 @@ const STATIC: Row[] = [
   ["nvidia/Nemotron-3_5-Lightning", 1048576, true, true, false, 0.06, 0.24],
   ["nvidia/nemotron-3-super-120b-a12b", 262144, true, true, false, 0.3, 0.9],
   ["nvidia/Nemotron-3-Ultra-550b-a55b", 1048576, true, true, false, 1, 3],
+  ["meta-models/muse-spark-open", 0, true, true, false, null, null],
   ["openai/gpt-oss-120b", 131072, true, true, false, 0.15, 0.6],
   ["NousResearch/Hermes-4-405B", 131072, true, true, false, 1, 3],
   ["google/gemma-3-27b-it", 110000, true, false, true, 0.1, 0.3],

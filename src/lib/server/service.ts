@@ -67,7 +67,7 @@ async function seed() {
       "Write in plain, specific language. Match the person's voice once you know it, and keep their style preferences in memory. Offer one tight draft, not three options.",
     emoji: "✒️",
     color: "#e0663d",
-    model: DEFAULT_MODEL,
+    model: "meta-models/muse-spark-open",
     tools: { ...tools, webSearch: false },
     approval: "ask",
     pinned: false,
