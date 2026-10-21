@@ -17,7 +17,7 @@ import { ConnectionsPanel } from "./ConnectionsPanel";
 export type Panel = { kind: "new-bot" } | { kind: "new-room" } | { kind: "settings" } | { kind: "connections" } | null;
 
 /** Bots use details/memory/browser; rooms use members/settings. */
-export type InspectorTab = "details" | "memory" | "browser" | "members" | "settings";
+export type InspectorTab = "details" | "memory" | "team-memory" | "browser" | "members" | "settings";
 export interface InspectorState {
   open: boolean;
   tab: InspectorTab;

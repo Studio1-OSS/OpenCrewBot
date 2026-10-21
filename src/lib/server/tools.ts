@@ -150,7 +150,7 @@ export function toolLabel(name: string, args: unknown): { label: string; detail?
   }
   if (name.startsWith("mcp_")) {
     const [, id, ...rest] = name.split("_");
-    return { label: `${mcpServerNames.get(id) ?? "MCP"}: ${rest.join(" ")}` };
+    return { label: `${mcpServerNames.get(id) ?? "MCP"}: ${rest.join(" ")}`, detail: typeof a.command === "string" ? a.command : undefined };
   }
   switch (name) {
     case "web_search":

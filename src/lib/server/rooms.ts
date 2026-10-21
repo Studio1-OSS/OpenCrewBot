@@ -2,6 +2,7 @@
 // hasn't seen, and let a bot hand off to a teammate by @mentioning them.
 import type { Bot, ChatMessage, Room, RouteNote } from "@/lib/shared/types";
 import { listBots, listMessages } from "./db";
+import { roomMemoryBoundary } from "./openlore";
 import { pickResponders } from "./jev";
 import { runTurn, stopEpochOf } from "./runtime";
 
@@ -88,6 +89,7 @@ export async function runRoom(room: Room, userMessage: ChatMessage): Promise<voi
   const bots = new Map(allBots.map((b) => [b.id, b]));
   const members = room.memberIds.map((id) => bots.get(id)).filter((b): b is Bot => Boolean(b));
   if (!members.length) return;
+  await roomMemoryBoundary(members, room.memoryBoundary ?? "unscoped");
 
   const conversationId = roomConversationId(room.id);
   const epoch = stopEpochOf(conversationId);
@@ -97,6 +99,7 @@ export async function runRoom(room: Room, userMessage: ChatMessage): Promise<voi
   const queue: Array<{ bot: Bot; route: RouteNote; depth: number }> = responders.map((bot) => ({ bot, route, depth: 0 }));
   while (queue.length && stopEpochOf(conversationId) === epoch) {
     const { bot, route: note, depth } = queue.shift()!;
+    await roomMemoryBoundary(members, room.memoryBoundary ?? "unscoped");
     const transcript = await listMessages(conversationId, 60);
     const reply = await runTurn({
       bot,

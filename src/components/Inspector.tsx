@@ -5,6 +5,7 @@ import { useState, type ReactNode } from "react";
 import { api } from "@/lib/client/api";
 import type { Bot, Room } from "@/lib/shared/types";
 import { BotForm, MemoryEditor } from "./BotForms";
+import { TeamMemory } from "./TeamMemory";
 import { ModelPicker } from "./ModelPicker";
 import { RoomForm } from "./RoomForms";
 import { useApp, type InspectorTab } from "./OpenCrewBotApp";
@@ -223,7 +224,8 @@ function BotInspector({ bot, tab, setTab }: { bot: Bot; tab: InspectorTab; setTa
             onChange={setTab}
             tabs={[
               { value: "details", label: "Details" },
-              { value: "memory", label: "Memory" },
+              { value: "memory", label: "Personal" },
+              { value: "team-memory", label: "Team memory" },
               { value: "browser", label: "Browser" },
             ]}
           />
@@ -232,6 +234,7 @@ function BotInspector({ bot, tab, setTab }: { bot: Bot; tab: InspectorTab; setTa
       <div className="px-5 pb-6">
         {current === "details" && <BotDetails key={bot.id} bot={bot} />}
         {current === "memory" && <MemoryEditor bot={bot} />}
+        {current === "team-memory" && <TeamMemory key={bot.id} bot={bot} />}
         {current === "browser" && <BrowserView bot={bot} />}
       </div>
     </>
