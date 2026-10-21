@@ -11,6 +11,7 @@ import { DEFAULT_MODEL } from "./models";
 import { deleteWorkspace, writeMemory } from "./memory-files";
 import { forgetConversation, resetBot, runTurn, runningBots, stopConversation } from "./runtime";
 import { messagePreview } from "@/lib/shared/preview";
+import { memoryBoundary, roomMemoryBoundary } from "./openlore";
 import { roomConversationId, runRoom } from "./rooms";
 
 export { InputError };
@@ -122,11 +123,14 @@ export async function createBot(input: BotInput): Promise<Bot> {
   const bot: Bot = {
     ...input,
     id: randomUUID().slice(0, 8),
+    teamMemoryBoundary: undefined,
     name: input.name.trim(),
     connections: input.connections ?? [],
     handle: await uniqueHandle(input.handle || input.name),
     createdAt: new Date().toISOString(),
   };
+  try { const boundary = await memoryBoundary(bot); if (boundary !== "unscoped") bot.teamMemoryBoundary = boundary; }
+  catch { /* A new offline bot has no prior context; pin on its first successful connection. */ }
   await store.saveBot(bot);
   writeMemory(bot.id, `# ${bot.name}'s memory\n\n`);
   publish({ type: "bots-changed" });
@@ -141,10 +145,19 @@ export async function updateBot(id: string, patch: Partial<BotInput>): Promise<B
     ...bot,
     ...patch,
     id: bot.id,
+    teamMemoryBoundary: bot.teamMemoryBoundary,
     createdAt: bot.createdAt,
     tools: { ...bot.tools, ...(patch.tools ?? {}) },
     handle: patch.handle !== undefined || patch.name !== undefined ? await uniqueHandle(patch.handle || patch.name || bot.handle, id) : bot.handle,
   };
+  if (patch.connections) {
+    const [before, after] = await Promise.all([bot.teamMemoryBoundary ? Promise.resolve(bot.teamMemoryBoundary) : memoryBoundary(bot), memoryBoundary(next)]);
+    if (before !== after && before !== "unscoped") throw new InputError("Changing this bot's Team Memory permissions would carry its old private context across teams. Create a fresh bot for the new access profile.");
+    if (after !== "unscoped") next.teamMemoryBoundary = after;
+    for (const room of await store.listRooms()) {
+      if (room.memberIds.includes(id) && before !== after) throw new InputError("Remove this bot from its existing rooms before assigning Team Memory. Create a new team room to protect earlier messages.");
+    }
+  }
   await store.saveBot(next);
   await resetBot(id);
   publish({ type: "bots-changed" });
@@ -185,6 +198,7 @@ export async function createRoom(input: RoomInput): Promise<Room> {
     name: clean.name.trim(),
     leadId: clean.leadId && clean.memberIds.includes(clean.leadId) ? clean.leadId : (clean.memberIds[0] ?? null),
     createdAt: new Date().toISOString(),
+    memoryBoundary: await roomMemoryBoundary((await store.listBots()).filter((b) => clean.memberIds.includes(b.id))),
   };
   await store.saveRoom(room);
   publish({ type: "rooms-changed" });
@@ -197,6 +211,7 @@ export async function updateRoom(id: string, patch: Partial<RoomInput>): Promise
   const clean = await cleanRoomInput(patch);
   const next: Room = { ...room, ...clean, id: room.id, createdAt: room.createdAt };
   if (!next.leadId || !next.memberIds.includes(next.leadId)) next.leadId = next.memberIds[0] ?? null;
+  next.memoryBoundary = await roomMemoryBoundary((await store.listBots()).filter((b) => next.memberIds.includes(b.id)), room.memoryBoundary ?? "unscoped");
   await store.saveRoom(next);
   publish({ type: "rooms-changed" });
   return next;
@@ -228,6 +243,7 @@ export async function sendMessage(conversationId: ConversationId, text: string):
   const room = kind === "room" ? await store.getRoom(id) : null;
   if (kind === "dm" && !bot) throw new InputError("That bot doesn't exist.");
   if (kind === "room" && !room) throw new InputError("That room doesn't exist.");
+  if (room) await roomMemoryBoundary((await store.listBots()).filter((b) => room.memberIds.includes(b.id)), room.memoryBoundary ?? "unscoped");
   if (room && room.memberIds.length === 0) throw new InputError("Add at least one bot to this room first.");
 
   const message: ChatMessage = {

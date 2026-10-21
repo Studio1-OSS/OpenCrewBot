@@ -1,0 +1,16 @@
+port: 42222
+http_port: 48080
+metrics_port: 0
+external_url: http://localhost:48080
+auth_file: ./lore.json
+data_dir: ./data
+readonly: false
+write_conflict_policy: hash
+passkeys:
+  enabled: false
+mcp:
+  enabled: true
+  require_auth: true
+tokens:
+  issuer: http://localhost:48080
+  audience: http://localhost:48080

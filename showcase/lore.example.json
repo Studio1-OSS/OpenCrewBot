@@ -1,0 +1,110 @@
+{
+  "allow_keyless": false,
+  "unknown_identity": "deny",
+  "roles": {
+    "research": {},
+    "frontend": {},
+    "backend": {},
+    "maintainer": {}
+  },
+  "identities": [
+    {
+      "name": "frontend-bot",
+      "roles": [
+        "frontend"
+      ]
+    },
+    {
+      "name": "backend-bot",
+      "roles": [
+        "backend"
+      ]
+    },
+    {
+      "name": "research-bot",
+      "roles": [
+        "research"
+      ]
+    },
+    {
+      "name": "claude-frontend",
+      "roles": [
+        "frontend"
+      ]
+    },
+    {
+      "name": "codex-backend",
+      "roles": [
+        "backend"
+      ]
+    },
+    {
+      "name": "maintainer",
+      "roles": [
+        "maintainer"
+      ]
+    }
+  ],
+  "docsets": {
+    "shared": {
+      "paths": [
+        "/shared"
+      ],
+      "access": {
+        "allow": {
+          "frontend": "ro",
+          "backend": "ro",
+          "research": "ro",
+          "maintainer": "rw"
+        }
+      }
+    },
+    "frontend": {
+      "paths": [
+        "/frontend"
+      ],
+      "access": {
+        "allow": {
+          "frontend": "rw",
+          "maintainer": "rw"
+        }
+      }
+    },
+    "backend": {
+      "paths": [
+        "/backend"
+      ],
+      "access": {
+        "allow": {
+          "backend": "rw",
+          "maintainer": "rw"
+        }
+      }
+    },
+    "contributions": {
+      "paths": [
+        "/contributions"
+      ],
+      "inbox": "inbox",
+      "access": {
+        "allow": {
+          "frontend": "publish",
+          "backend": "publish",
+          "research": "publish",
+          "maintainer": "rw"
+        }
+      }
+    }
+  },
+  "rules": {
+    "memory-budget": {
+      "match": [
+        "**/*.md"
+      ],
+      "use": "size/lines",
+      "with": {
+        "max": 200
+      }
+    }
+  }
+}

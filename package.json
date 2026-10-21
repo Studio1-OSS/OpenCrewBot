@@ -7,7 +7,11 @@
     "dev": "next dev -H 127.0.0.1",
     "build": "next build",
     "start": "next start -H 127.0.0.1",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:openlore": "node --test tests/openlore-*.test.mjs",
+    "showcase:setup": "python3 showcase/manage.py setup",
+    "showcase:lore": "python3 showcase/manage.py start",
+    "showcase:seed": "python3 showcase/seed.py"
   },
   "dependencies": {
     "@composio/core": "^0.23.0",

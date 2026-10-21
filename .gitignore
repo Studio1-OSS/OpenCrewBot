@@ -48,3 +48,12 @@ next-env.d.ts
 .gstack/
 
 
+
+# Local OpenLore binaries, credentials and execution evidence
+/.local/
+/showcase/runtime/
+/showcase/evidence/
+/showcase/clients/*/.claude/settings.local.json
+/showcase/clients/*/.codex/config.toml
+__pycache__/
+*.pyc

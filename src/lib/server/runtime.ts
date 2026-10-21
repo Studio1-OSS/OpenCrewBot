@@ -10,12 +10,14 @@ import { Memory } from "@mastra/memory";
 import { randomUUID } from "node:crypto";
 import type { Bot, ChatMessage, ConversationId, Part, RouteNote } from "@/lib/shared/types";
 import { MASTRA_DB_URL, OWNER_ID, isMock } from "./config";
-import { conversationGeneration, getBot, saveMessage } from "./db";
+import { conversationGeneration, getBot, saveBot, saveMessage } from "./db";
 import { publish } from "./bus";
 import { costUsd, findModel } from "./models";
 import { createMockModel } from "./mock-model";
 import { announceLiveView, createSession, releaseSession } from "./browserbase";
-import { buildConnectorTools, connectionsVersion } from "./connectors";
+import { buildConnectorTools, connectionsVersion, openLoreServerIds } from "./connectors";
+import { openLoreResult } from "@/lib/shared/openlore-result";
+import { memoryBoundary, recordTeamOperation } from "./openlore";
 import { systemPrompt } from "./prompt";
 import { buildTools, toolCategory, toolLabel, toolPreview, toolSources } from "./tools";
 
@@ -207,6 +209,7 @@ class TurnFolder {
   private resolveDone!: (m: ChatMessage) => void;
   readonly done = new Promise<ChatMessage>((r) => (this.resolveDone = r));
   finished = false;
+  private toolArgs = new Map<string, unknown>();
 
   constructor(conversationId: ConversationId, bot: Bot, route?: RouteNote) {
     this.message = {
@@ -264,6 +267,7 @@ class TurnFolder {
       }
       case "tool_start": {
         if (event.toolName === "ask_user" || this.toolPart.has(event.toolCallId)) break;
+        this.toolArgs.set(event.toolCallId, event.args);
         const { label, detail } = toolLabel(event.toolName, event.args);
         this.message.parts.push({ kind: "tool", toolCallId: event.toolCallId, name: event.toolName, label, detail, status: "running" });
         this.toolPart.set(event.toolCallId, this.message.parts.length - 1);
@@ -273,6 +277,7 @@ class TurnFolder {
       case "tool_approval_required": {
         let part = this.tool(event.toolCallId);
         if (!part) {
+          this.toolArgs.set(event.toolCallId, event.args);
           const { label, detail } = toolLabel(event.toolName, event.args);
           this.message.parts.push({ kind: "tool", toolCallId: event.toolCallId, name: event.toolName, label, detail, status: "awaiting-approval" });
           this.toolPart.set(event.toolCallId, this.message.parts.length - 1);
@@ -297,7 +302,13 @@ class TurnFolder {
       case "tool_end": {
         const part = this.tool(event.toolCallId);
         if (!part) break;
-        part.status = event.denied ? "denied" : event.isError ? "error" : "done";
+        const isLore = openLoreServerIds.has(part.name.split("_")[1]);
+        const result = isLore ? openLoreResult(event.result) : null;
+        part.status = event.denied ? "denied" : event.isError || (result && result.exit_code !== 0) ? "error" : "done";
+        if (isLore && result) {
+          const args = this.toolArgs.get(event.toolCallId) as { command?: string } | undefined;
+          void recordTeamOperation(this.message.botId!, args?.command ?? part.name, event.result).catch(console.error);
+        }
         part.preview = toolPreview(event.result);
         part.sources = toolSources(event.result);
         this.emit(true);
@@ -392,6 +403,9 @@ async function executeTurn({ bot, conversationId, content, route }: TurnRequest)
 
   let unsubscribe: (() => void) | undefined;
   try {
+    const boundary = await memoryBoundary(latest);
+    if (latest.teamMemoryBoundary && latest.teamMemoryBoundary !== boundary) throw new Error("Team Memory permissions changed. Create a fresh bot to keep earlier private context in its original team.");
+    if (!latest.teamMemoryBoundary && boundary !== "unscoped") { latest.teamMemoryBoundary = boundary; await saveBot(latest); }
     const session = await sessionFor(latest, conversationId);
     unsubscribe = session.subscribe((event) => folder.handle(event));
     await session.sendMessage({ content });

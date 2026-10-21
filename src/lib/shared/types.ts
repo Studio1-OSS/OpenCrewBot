@@ -27,6 +27,8 @@ export interface Bot {
   color: string;
   model: string;
   tools: BotTools;
+  /** Pinned by the server after verification; protects prior private context. */
+  teamMemoryBoundary?: string;
   /** Connection ids this bot may use: `composio:<toolkit>` or `mcp:<serverId>`. */
   connections: string[];
   approval: ApprovalMode;
@@ -34,7 +36,7 @@ export interface Bot {
   createdAt: string;
 }
 
-export type BotInput = Omit<Bot, "id" | "createdAt" | "handle" | "connections"> & { handle?: string; connections?: string[] };
+export type BotInput = Omit<Bot, "id" | "createdAt" | "handle" | "connections" | "teamMemoryBoundary"> & { handle?: string; connections?: string[] };
 
 export type RoomResponder = "auto" | "lead" | "everyone";
 
@@ -48,9 +50,11 @@ export interface Room {
   responder: RoomResponder;
   pinned: boolean;
   createdAt: string;
+  /** Server-computed effective OpenLore access boundary; never supplied by a client. */
+  memoryBoundary?: string;
 }
 
-export type RoomInput = Omit<Room, "id" | "createdAt">;
+export type RoomInput = Omit<Room, "id" | "createdAt" | "memoryBoundary">;
 
 /** `dm:<botId>` or `room:<roomId>`. */
 export type ConversationId = string;
@@ -157,6 +161,32 @@ export interface McpServer {
   url: string;
   hasToken: boolean;
   headerNames: string[];
+  kind?: "generic" | "openlore";
+}
+
+export interface OpenLoreResult {
+  stdout: string;
+  stderr: string;
+  exit_code: number;
+}
+
+export interface TeamMemoryOperation {
+  id: string;
+  at: string;
+  command: string;
+  exitCode: number;
+  preview: string;
+}
+
+export interface TeamMemoryState {
+  servers: McpServer[];
+  serverId?: string;
+  identity?: string;
+  collections?: string;
+  files?: string[];
+  operations: TeamMemoryOperation[];
+  document?: { path: string; content: string };
+  error?: string;
 }
 
 export interface ConnectionsState {

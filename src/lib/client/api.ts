@@ -11,6 +11,7 @@ import type {
   ModelOption,
   Room,
   RoomInput,
+  TeamMemoryState,
 } from "@/lib/shared/types";
 
 async function call<T>(path: string, init?: RequestInit & { json?: unknown }): Promise<T> {
@@ -42,6 +43,7 @@ export const api = {
   createBot: (input: BotInput) => call<{ bot: Bot }>("/api/bots", { method: "POST", json: input }),
   updateBot: (id: string, patch: Partial<BotInput>) => call<{ bot: Bot }>(`/api/bots/${id}`, { method: "PATCH", json: patch }),
   deleteBot: (id: string) => call(`/api/bots/${id}`, { method: "DELETE" }),
+  teamMemory: (id: string, serverId?: string, path?: string) => call<TeamMemoryState>(`/api/bots/${id}/team-memory?${new URLSearchParams({ ...(serverId ? { server: serverId } : {}), ...(path ? { path } : {}) })}`),
   getMemory: (id: string) => call<{ content: string; path: string; limit: { lines: number; bytes: number } }>(`/api/bots/${id}/memory`),
   saveMemory: (id: string, content: string) => call<{ content: string }>(`/api/bots/${id}/memory`, { method: "PUT", json: { content } }),
   createRoom: (input: RoomInput) => call<{ room: Room }>("/api/rooms", { method: "POST", json: input }),
@@ -61,8 +63,9 @@ export const api = {
   connectApp: (slug: string) => call<{ redirectUrl: string }>("/api/connections/composio/connect", { method: "POST", json: { slug } }),
   disconnectApp: (slug: string) => call("/api/connections/composio/disconnect", { method: "POST", json: { slug } }),
   connectionsChanged: () => call("/api/connections/changed", { method: "POST" }),
-  addMcpServer: (input: { name: string; url: string; token?: string; headers?: Record<string, string> }) =>
+  addMcpServer: (input: { name: string; url: string; token?: string; headers?: Record<string, string>; kind?: "generic" | "openlore" }) =>
     call<{ server: McpServer }>("/api/connections/mcp", { method: "POST", json: input }),
+  refreshMcpToken: (id: string, token: string) => call(`/api/connections/mcp/${id}`, { method: "PATCH", json: { token } }),
   removeMcpServer: (id: string) => call(`/api/connections/mcp/${id}`, { method: "DELETE" }),
-  testMcpServer: (id: string) => call<{ tools: number }>(`/api/connections/mcp/${id}/test`, { method: "POST" }),
+  testMcpServer: (id: string) => call<{ tools: number; identity?: string; collections?: string }>(`/api/connections/mcp/${id}/test`, { method: "POST" }),
 };

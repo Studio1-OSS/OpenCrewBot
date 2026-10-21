@@ -1,5 +1,5 @@
-import { handle } from "@/lib/server/http";
-import { removeServer } from "@/lib/server/mcp-servers";
+import { body, handle } from "@/lib/server/http";
+import { refreshServerToken, removeServer } from "@/lib/server/mcp-servers";
 import { connectionsChanged } from "@/lib/server/connectors";
 import { listBots, saveBot } from "@/lib/server/db";
 
@@ -11,6 +11,16 @@ export async function DELETE(_request: Request, ctx: RouteContext<"/api/connecti
     for (const bot of await listBots()) {
       if (bot.connections.includes(`mcp:${id}`)) await saveBot({ ...bot, connections: bot.connections.filter((c) => c !== `mcp:${id}`) });
     }
+    await connectionsChanged();
+  });
+}
+
+
+export async function PATCH(request: Request, ctx: RouteContext<"/api/connections/mcp/[id]">) {
+  const { id } = await ctx.params;
+  return handle(async () => {
+    const { token } = await body<{ token: string }>(request);
+    await refreshServerToken(id, token);
     await connectionsChanged();
   });
 }

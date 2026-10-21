@@ -79,7 +79,7 @@ const GITHUB_PRESET = { name: "GitHub", url: "https://api.githubcopilot.com/mcp/
 
 function AddServerForm({ onAdded }: { onAdded: () => void }) {
   const { toast } = useApp();
-  const [form, setForm] = useState({ name: "", url: "", token: "", headerName: "", headerValue: "" });
+  const [form, setForm] = useState({ name: "", url: "", token: "", headerName: "", headerValue: "", kind: "generic" as "generic" | "openlore" });
   const [saving, setSaving] = useState(false);
   const set = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -87,15 +87,15 @@ function AddServerForm({ onAdded }: { onAdded: () => void }) {
     setSaving(true);
     try {
       const headers = form.headerName.trim() ? { [form.headerName.trim()]: form.headerValue } : undefined;
-      const { server } = await api.addMcpServer({ name: form.name, url: form.url, token: form.token || undefined, headers });
+      const { server } = await api.addMcpServer({ name: form.name, url: form.url, token: form.token || undefined, headers, kind: form.kind });
       // Check it straight away so a typo in the URL or token shows up now, not mid-chat.
       try {
-        const { tools } = await api.testMcpServer(server.id);
-        toast(`${server.name} added: ${tools} tools. Switch it on for a bot in its Details.`);
+        const { tools, identity } = await api.testMcpServer(server.id);
+        toast(`${server.name} added: ${tools} tools${identity ? ` · ${identity}` : ""}. Switch it on for a bot in its Details.`);
       } catch (error) {
         toast(`${server.name} added, but the test failed: ${error instanceof Error ? error.message : "unknown error"}`);
       }
-      setForm({ name: "", url: "", token: "", headerName: "", headerValue: "" });
+      setForm({ name: "", url: "", token: "", headerName: "", headerValue: "", kind: "generic" as "generic" | "openlore" });
       onAdded();
     } catch (error) {
       toast(error instanceof Error ? error.message : "Couldn't add the server.");
@@ -108,10 +108,12 @@ function AddServerForm({ onAdded }: { onAdded: () => void }) {
     <div className="space-y-3 rounded-2xl bg-raised p-4">
       <div className="flex items-center justify-between gap-2">
         <span className="text-[14px] font-medium">Add an MCP server</span>
-        <Button size="sm" variant="ghost" onClick={() => setForm((f) => ({ ...f, ...GITHUB_PRESET }))}>
+        <Button size="sm" variant="ghost" onClick={() => setForm((f) => ({ ...f, ...GITHUB_PRESET, kind: "generic" }))}>
           Use GitHub preset
         </Button>
       </div>
+      <Button size="sm" variant="secondary" onClick={() => setForm((f) => ({ ...f, name: "OpenLore", url: "http://localhost:48080/mcp", kind: "openlore" }))}>Use OpenLore preset</Button>
+      {form.kind === "openlore" && <p className="text-[12px] leading-relaxed text-mute">Team Memory: add a separate connection and identity token for each bot. The connection test checks identity and grants.</p>}
       <div className="grid grid-cols-[1fr_2fr] gap-2">
         <Field label="Name">
           <input className={inputClass} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="GitHub" />
@@ -141,6 +143,20 @@ function AddServerForm({ onAdded }: { onAdded: () => void }) {
       </div>
     </div>
   );
+}
+
+function RefreshToken({ serverId }: { serverId: string }) {
+  const { toast } = useApp();
+  const [open, setOpen] = useState(false);
+  const [token, setToken] = useState("");
+  const [saving, setSaving] = useState(false);
+  if (!open) return <Button size="sm" variant="ghost" onClick={() => setOpen(true)}>Refresh token</Button>;
+  return <form className="flex flex-wrap items-center gap-2" onSubmit={async (event) => {
+    event.preventDefault(); setSaving(true);
+    try { await api.refreshMcpToken(serverId, token); setToken(""); setOpen(false); toast("Credential refreshed; identity and permissions verified."); }
+    catch (error) { toast(error instanceof Error ? error.message : "Couldn't refresh token."); }
+    finally { setSaving(false); }
+  }}><input aria-label="New OpenLore identity token" type="password" autoComplete="off" value={token} onChange={(e) => setToken(e.target.value)} className={`${inputClass} w-48`} /><Button type="submit" size="sm" disabled={saving || !token.trim()}>{saving ? "Verifying…" : "Save token"}</Button><Button size="sm" variant="ghost" onClick={() => { setToken(""); setOpen(false); }}>Cancel</Button></form>;
 }
 
 export function ConnectionsPanel({ onClose }: { onClose: () => void }) {
@@ -250,7 +266,7 @@ export function ConnectionsPanel({ onClose }: { onClose: () => void }) {
         {data && data.mcpServers.length > 0 && (
           <ul className="mb-3 divide-y divide-line rounded-2xl bg-raised">
             {data.mcpServers.map((s) => (
-              <li key={s.id} className="flex items-center gap-3 px-4 py-3">
+              <li key={s.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[14px] font-medium">{s.name}</span>
                   <span className="block truncate text-[12px] text-faint">
@@ -258,6 +274,7 @@ export function ConnectionsPanel({ onClose }: { onClose: () => void }) {
                     {s.hasToken ? " · token set" : ""}
                   </span>
                 </span>
+                {s.kind === "openlore" && <RefreshToken serverId={s.id} />}
                 <Button size="sm" variant="ghost" disabled={testing === s.id} onClick={() => test(s.id, s.name)}>
                   {testing === s.id ? "Testing…" : "Test"}
                 </Button>

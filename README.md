@@ -4,6 +4,8 @@
 
 # OpenCrewBot
 
+**[OpenLore Team Memory](docs/openlore.md)** — share current project knowledge through identity-scoped connections while keeping each bot's personal `MEMORY.md` separate. Includes a local synthetic setup and [evaluation notes](docs/openlore-evaluation.md).
+
 ### Your own team of AI bots, in one chat app.
 
 **An open-source alternative to Grok Bot, on open models. Each bot has its own model, tools, memory and cloud browser.**
